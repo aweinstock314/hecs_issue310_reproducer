@@ -1,9 +1,5 @@
-use hecs::{Archetype, ColumnBatchBuilder, ColumnBatchType};
-use serde::{
-    de::SeqAccess, ser::SerializeStruct, ser::SerializeTuple, Deserialize, Deserializer, Serialize,
-    Serializer,
-};
-use std::{any::TypeId, f32::consts::TAU};
+use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
+use std::f32::consts::TAU;
 use vek::Vec2;
 
 #[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
@@ -86,7 +82,7 @@ impl<'de, T: Deserialize<'de>, const N: usize> Deserialize<'de> for RollbackBuff
 }
 
 macro_rules! hecs_serialization {
-    ($tag:ident, $ser_ctx:ident, $row_de_ctx:ident, $col_de_ctx:ident, [$($ty:ident,)*]) => {
+    ($tag:ident, $ser_ctx:ident, $row_de_ctx:ident, [$($ty:ident,)*]) => {
         #[derive(Serialize, Deserialize)]
         pub enum $tag {
             $($ty,)*
@@ -105,28 +101,6 @@ macro_rules! hecs_serialization {
             }
         }
 
-        impl hecs::serialize::column::SerializeContext for $ser_ctx {
-            fn component_count(&self, archetype: &Archetype) -> usize {
-                archetype
-                    .component_types()
-                    .filter(|&t| {
-                        false
-                        $(|| t == TypeId::of::<$ty>())*
-                    })
-                    .count()
-            }
-            fn serialize_component_ids<S: SerializeTuple>(&mut self, archetype: &Archetype, mut out: S) -> Result<S::Ok, S::Error> {
-                use hecs::serialize::column::try_serialize_id;
-                $(try_serialize_id::<$ty, _, _>(archetype, &$tag::$ty, &mut out)?;)*
-                out.end()
-            }
-            fn serialize_components<S: SerializeTuple>(&mut self, archetype: &Archetype, mut out: S) -> Result<S::Ok, S::Error> {
-                use hecs::serialize::column::try_serialize;
-                $(try_serialize::<$ty, _>(archetype, &mut out)?;)*
-                out.end()
-            }
-        }
-
         pub struct $row_de_ctx;
 
         impl hecs::serialize::row::DeserializeContext for $row_de_ctx {
@@ -135,47 +109,6 @@ macro_rules! hecs_serialization {
                 while let Some(key) = map.next_key()? {
                     match key {
                         $($tag::$ty => { entity.add::<$ty>(map.next_value()?); })*
-                    }
-                }
-                Ok(())
-            }
-        }
-
-        pub struct $col_de_ctx {
-            components: Vec<$tag>,
-        }
-
-        impl $col_de_ctx {
-            pub fn new() -> $col_de_ctx {
-                $col_de_ctx { components: Vec::new() }
-            }
-        }
-
-        impl hecs::serialize::column::DeserializeContext for $col_de_ctx {
-            #[rustfmt::skip]
-            fn deserialize_component_ids<'de, A>(&mut self, mut seq: A) -> Result<ColumnBatchType, A::Error>
-            where
-                A: SeqAccess<'de>,
-            {
-                self.components.clear();
-                let mut batch = ColumnBatchType::new();
-                while let Some(id) = seq.next_element()? {
-                    match id {
-                        $($tag::$ty => { batch.add::<$ty>(); })*
-                    }
-                    self.components.push(id);
-                }
-                Ok(batch)
-            }
-            #[rustfmt::skip]
-            fn deserialize_components<'de, A>(&mut self, entity_count: u32, mut seq: A, batch: &mut ColumnBatchBuilder) -> Result<(), A::Error>
-            where
-                A: serde::de::SeqAccess<'de>,
-            {
-                use hecs::serialize::column::deserialize_column;
-                for component in &self.components {
-                    match *component {
-                        $($tag::$ty => { deserialize_column::<$ty, _>(entity_count, &mut seq, batch)?; })*
                     }
                 }
                 Ok(())
@@ -192,7 +125,6 @@ hecs_serialization!(
     ComponentTypeTag,
     WorldSerializeContext,
     WorldDeserializeContext,
-    WorldDeserializeColumnContext,
     [
         Position, Size, Rotation, Renderable, SpawnPoint, LevelData, RBPosition, RBSize,
         RBRotation,

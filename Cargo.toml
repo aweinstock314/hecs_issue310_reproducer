@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hecs = { version = "0.9", features = ["column-serialize", "row-serialize"] }
+hecs = { version = "0.9", features = ["row-serialize"] }
 serde = "1.0"
 serde_json = { version = "1.0", features = ["float_roundtrip"] }
 vek = "0.15"
