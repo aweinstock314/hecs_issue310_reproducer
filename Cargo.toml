@@ -1,5 +1,5 @@
 [package]
-name = "hecs_crash_reproducer"
+name = "hecs_issue310_reproducer"
 version = "0.1.0"
 edition = "2021"
 
