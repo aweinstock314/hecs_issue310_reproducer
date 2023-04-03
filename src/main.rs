@@ -132,8 +132,8 @@ hecs_serialization!(
 );
 
 fn main() {
-    let pre = include_bytes!("pre.json");
-    let post = include_bytes!("post.json");
+    let pre = include_bytes!("pre2.json");
+    let post = include_bytes!("post2.json");
 
     let mut deserializer = serde_json::Deserializer::from_slice(pre);
     let mut world =
