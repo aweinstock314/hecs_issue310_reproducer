@@ -132,8 +132,8 @@ hecs_serialization!(
 );
 
 fn main() {
-    let pre = include_bytes!("pre2.json");
-    let post = include_bytes!("post2.json");
+    let pre = include_bytes!("pre3.json");
+    let post = include_bytes!("post3.json");
 
     let mut deserializer = serde_json::Deserializer::from_slice(pre);
     let mut world =
@@ -147,5 +147,21 @@ fn main() {
     let mut deserializer = serde_json::Deserializer::from_slice(post);
     world =
         hecs::serialize::row::deserialize(&mut WorldDeserializeContext, &mut deserializer).unwrap();
+    cmd.run_on(&mut world);
+}
+
+#[test]
+fn attempt2() {
+    let mut world = hecs::World::new();
+    #[derive(Clone)]
+    struct A;
+    let _a = world.spawn((A,));
+    let _b = world.spawn((A,));
+    let mut cmd = hecs::CommandBuffer::new();
+    for (entity, (data,)) in world.query_mut::<(&A,)>() {
+        cmd.insert(entity, (data.clone(),));
+    }
+    let mut world = hecs::World::new();
+    let _a = world.spawn(());
     cmd.run_on(&mut world);
 }
